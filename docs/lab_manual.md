@@ -59,13 +59,13 @@ swtpm socket \
 **每次打开新终端都要执行这一行**，告诉 tpm2-tools 怎么连到模拟器：
 
 ```bash
-export TPM2TOOLS_TCTI="mssim:host=localhost,port=2321"
+export TPM2TOOLS_TCTI="swtpm:host=localhost,port=2321"
 ```
 
 > 💡 **TCTI 是什么?**
 > TCTI = TPM Command Transmission Interface（命令传输接口）
 > 它定义了 tpm2-tools 怎么把命令发给 TPM。
-> `mssim` 表示通过 TCP 连接到微软 TPM 模拟器协议（swtpm 兼容这个协议）。
+> `swtpm` 表示通过 TCP 连接到 swtpm 模拟器（专用 TCTI，兼容性最好）。
 
 ### 0.4 验证连接
 
