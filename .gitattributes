@@ -1,0 +1,5 @@
+# 确保 shell 脚本在所有平台使用 LF 行尾 (Linux 格式)
+*.sh text eol=lf
+*.conf text eol=lf
+*.md text eol=lf
+*.txt text eol=lf

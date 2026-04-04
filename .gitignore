@@ -1,0 +1,29 @@
+# TPM 运行时产生的临时文件
+*.ctx
+*.pub
+*.priv
+*.bin
+*.sig
+*.msg
+*.pem
+*.der
+*.name
+*.log
+
+# TPM 状态目录
+/tmp/tpm-vault-*
+
+# PKCS#11 store (会在 home 目录下)
+.tpm2_pkcs11/
+
+# OS 文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

@@ -1,0 +1,23 @@
+# 系统配置基线文件 (用于 PCR 度量演示)
+# 模拟一个关键系统配置文件
+
+[system]
+hostname=trusted-server-01
+os=Ubuntu 22.04 LTS
+kernel=5.15.0-generic
+
+[security]
+firewall=enabled
+selinux=enforcing
+ssh_root_login=no
+ssh_port=22
+
+[services]
+web_server=nginx
+database=postgresql
+monitoring=enabled
+
+[integrity]
+baseline_version=1.0
+last_verified=2024-01-01
+checksum_algorithm=sha256
