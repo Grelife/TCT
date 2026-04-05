@@ -107,7 +107,16 @@ PCR_new = SHA256(PCR_old || new_data)
 tpm2_pcrread sha256
 ```
 
-你会看到 PCR 0 ~ PCR 23，全部是零。这是因为模拟器刚启动，还没有任何度量。
+你会看到 PCR 0 ~ PCR 23 的值。注意观察：
+- **PCR 0~16 和 23**：全零 (`0x000...`) — 表示"空白待填"，等待被度量数据扩展
+- **PCR 17~22**：全 F (`0xFFF...`) — 这些是 **D-RTM（动态信任根）** 专用的 PCR
+
+> 💡 **为什么 PCR 17~22 是全 F 而不是全零？**
+> 全 F 表示"尚未执行 D-RTM 启动（如 Intel TXT）"。如果也初始化为全零，
+> 攻击者可能在系统还没做 D-RTM 度量的窗口期，利用全零状态骗过绑定了这些 PCR 的策略。
+> 全 F 是一个不可能通过正常度量产生的值，确保策略在 D-RTM 未执行时一定失败。
+>
+> 我们的实验只用 PCR 0~16，不涉及 D-RTM。
 
 ### 1.2 我们来度量一个文件
 
@@ -448,7 +457,7 @@ sudo apt install -y libtpm2-pkcs11-1 libtpm2-pkcs11-tools opensc
 ### 4.2 设置 PKCS#11 环境
 
 ```bash
-export TPM2_PKCS11_TCTI="mssim:host=localhost,port=2321"
+export TPM2_PKCS11_TCTI="swtpm:host=localhost,port=2321"
 export TPM2_PKCS11_STORE="/tmp/tpm-pkcs11-store"
 mkdir -p $TPM2_PKCS11_STORE
 ```
