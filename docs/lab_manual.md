@@ -295,13 +295,14 @@ tpm2_load -C primary.ctx -u sealed.pub -r sealed.priv -c sealed.ctx
 现在 PCR 16 的值还没变，应该能成功解封：
 
 ```bash
-# 开始一个策略会话（注意 --policy-session，表示这是授权用的）
+# 开始一个策略会话
 tpm2_startauthsession -S session.ctx --policy-session
 
 # "证明"当前 PCR 值满足策略
 tpm2_policypcr -S session.ctx -l sha256:16
 
-# 解封！
+# 解封！(别忘了老规矩，由于没有资源管理器，加载前先冲洗掉前人的垃圾对象)
+tpm2_flushcontext -t 2>/dev/null || true
 tpm2_unseal -c sealed.ctx -p session:session.ctx
 
 # 清理会话
@@ -328,6 +329,9 @@ PCR 16 的值已经变了。现在尝试解封：
 ```bash
 tpm2_startauthsession -S session.ctx --policy-session
 tpm2_policypcr -S session.ctx -l sha256:16
+
+# 同样的，尝试解封前先清空旧垃圾
+tpm2_flushcontext -t 2>/dev/null || true
 tpm2_unseal -c sealed.ctx -p session:session.ctx
 ```
 
