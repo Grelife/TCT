@@ -24,7 +24,7 @@
 疑问：在执行扩展度量命令 `tpm2_pcrextend 10:sha256=<hash>` 时，为什么要写成 `10:sha256` 而不是类似读取时的 `sha256:10` 顺延？
 
 **分析与原因**：
-这是 `tpm2-tools` 工具的命令语法逻辑差异造成的：
+这是 `tpm2-tools` 工具的命令语法逻辑差异造成的：不同的算法库有不同的PCR索引。
 1.  **Reading（读取）操作** (`tpm2_pcrread sha256:10`)：
     逻辑侧重点在“**访问哪个 Bank (算法空间)**”，即从 `sha256` 算法库中取回 `PCR 10` 的值。并且支持同时从一个算法库读取多个 PCR：`tpm2_pcrread sha256:0,1,10`
 2.  **Extending（扩展）操作** (`tpm2_pcrextend 10:sha256=<hash>`)：

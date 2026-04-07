@@ -254,9 +254,13 @@ tpm2_flushcontext session.ctx
 
 ### 2.5 密封秘密数据
 
-先看看要保护的数据：
+TPM 的安全存储区极小，通常**直接密封的数据不能超过 128 字节**！
+（在真实场景中，我们只用 TPM 密封几十个字节的 AES 密钥，再用 AES 加密大文件。）
+
+我们先生成一个短小的核心机密：
 
 ```bash
+echo "MySecretKey-123456" > test_files/secret.txt
 cat test_files/secret.txt
 ```
 
@@ -277,7 +281,12 @@ tpm2_create -C primary.ctx -L my_policy.bin -i test_files/secret.txt \
 
 然后加载到 TPM：
 
+> 💡 **避坑指南 - TPM 内存限制：**
+> 真实的 TPM 芯片“瞬态内存”通常只有 **3个插槽**。上一步 `tpm2_create` 命令底层执行完毕时，往往会遗留占用的内存句柄没有自动释放。
+> 为了防止由于内存爆满而导致的 `out of memory for object contexts (0x902)` 错误，我们必须**手动清理一次瞬态内存**，腾出空间后再加载！
+
 ```bash
+tpm2_flushcontext -t
 tpm2_load -C primary.ctx -u sealed.pub -r sealed.priv -c sealed.ctx
 ```
 
