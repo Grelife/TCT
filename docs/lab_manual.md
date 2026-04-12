@@ -412,7 +412,7 @@ echo "随机挑战 Nonce: 0x${NONCE}"
 
 ```bash
 tpm2_flushcontext -t 2>/dev/null || true
-tpm2_quote -c ak.ctx -l sha256:0,1,2 -q 0x${NONCE} \
+tpm2_quote -c ak.ctx -l sha256:0,1,2 -q ${NONCE} \
     -m quote.msg -s quote.sig -o quote_pcr.bin -g sha256
 ```
 
@@ -429,7 +429,7 @@ tpm2_quote -c ak.ctx -l sha256:0,1,2 -q 0x${NONCE} \
 
 ```bash
 tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig \
-    -f quote_pcr.bin -q 0x${NONCE}
+    -f quote_pcr.bin -q ${NONCE}
 ```
 
 如果输出没有报错，说明：
@@ -442,7 +442,7 @@ tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig \
 ```bash
 WRONG_NONCE=$(openssl rand -hex 16)
 tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig \
-    -f quote_pcr.bin -q 0x${WRONG_NONCE}
+    -f quote_pcr.bin -q ${WRONG_NONCE}
 ```
 
 ❌ 应该报错！因为 Nonce 不匹配。
