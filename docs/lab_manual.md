@@ -392,6 +392,7 @@ tpm2_createak -C ek.ctx -c ak.ctx -G rsa -g sha256 -s rsassa \
 导出 AK 公钥（发给验证方）：
 
 ```bash
+tpm2_flushcontext -t 2>/dev/null || true
 tpm2_readpublic -c ak.ctx -f pem -o ak.pem
 cat ak.pem
 ```
@@ -410,6 +411,7 @@ echo "随机挑战 Nonce: 0x${NONCE}"
 ### 3.5 平台方生成 Quote
 
 ```bash
+tpm2_flushcontext -t 2>/dev/null || true
 tpm2_quote -c ak.ctx -l sha256:0,1,2 -q 0x${NONCE} \
     -m quote.msg -s quote.sig -o quote_pcr.bin -g sha256
 ```
