@@ -19,8 +19,8 @@ print_banner "${ICON_LOCK} 演示 2: 数据密封与解封 (Seal/Unseal)"
 check_environment
 setup_work_dir "seal_unseal"
 
-# 准备要密封的秘密数据
-cp "${PROJECT_ROOT}/test_files/secret.txt" ./secret.txt
+# 准备要密封的秘密数据 (注意：TPM 密封数据不能超过 128 字节)
+echo "MySecretKey-123456" > ./secret.txt
 
 # ============================================================
 # 步骤 1: 准备 —— 对系统文件进行度量（建立可信基线）
@@ -95,6 +95,7 @@ print_success "数据已密封！"
 print_info "密封后的数据由 TPM 保护，只有满足 PCR 策略才能解封"
 
 # 加载密封对象
+tpm2_flushcontext -t 2>/dev/null || true
 print_cmd "tpm2_load -C primary.ctx -u seal.pub -r seal.priv -c seal.ctx"
 tpm2_load -C primary.ctx -u seal.pub -r seal.priv -c seal.ctx 2>/dev/null
 print_substep "密封对象已加载到 TPM"
@@ -113,6 +114,7 @@ tpm2_policypcr -S session.ctx -l sha256:16 2>/dev/null
 
 echo ""
 print_substep "${GREEN}${BOLD}解封结果:${NC}"
+tpm2_flushcontext -t 2>/dev/null || true
 print_cmd "tpm2_unseal -c seal.ctx -p session:session.ctx"
 UNSEALED=$(tpm2_unseal -c seal.ctx -p session:session.ctx 2>/dev/null)
 echo ""
@@ -163,6 +165,7 @@ print_cmd "tpm2_policypcr -S session.ctx -l sha256:16"
 
 echo ""
 if tpm2_policypcr -S session.ctx -l sha256:16 2>/dev/null; then
+    tpm2_flushcontext -t 2>/dev/null || true
     print_cmd "tpm2_unseal -c seal.ctx -p session:session.ctx"
     if UNSEAL_RESULT=$(tpm2_unseal -c seal.ctx -p session:session.ctx 2>&1); then
         # 不应该到这里

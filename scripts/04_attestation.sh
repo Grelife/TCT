@@ -77,6 +77,7 @@ tpm2_createak -C ek.ctx -c ak.ctx -G rsa -g sha256 -s rsassa -u ak.pub -n ak.nam
 print_success "证明身份密钥 (AK) 已创建"
 
 # 导出 AK 公钥 (PEM 格式)
+tpm2_flushcontext -t 2>/dev/null || true
 print_cmd "tpm2_readpublic -c ak.ctx -f pem -o ak.pem"
 tpm2_readpublic -c ak.ctx -f pem -o ak.pem 2>/dev/null
 print_substep "AK 公钥已导出 (ak.pem)"
@@ -104,8 +105,9 @@ print_step "5" "平台方生成 Quote (签名的 PCR 报告)"
 print_info "TPM 使用 AK 私钥对 PCR 值进行签名"
 print_info "Quote 包含: PCR 值 + Nonce + AK 签名"
 
-print_cmd "tpm2_quote -c ak.ctx -l sha256:0,1,2 -q 0x${NONCE} -m quote.msg -s quote.sig -o quote_pcr.bin -g sha256"
-tpm2_quote -c ak.ctx -l sha256:0,1,2 -q "0x${NONCE}" \
+tpm2_flushcontext -t 2>/dev/null || true
+print_cmd "tpm2_quote -c ak.ctx -l sha256:0,1,2 -q ${NONCE} -m quote.msg -s quote.sig -o quote_pcr.bin -g sha256"
+tpm2_quote -c ak.ctx -l sha256:0,1,2 -q "${NONCE}" \
     -m quote.msg -s quote.sig -o quote_pcr.bin -g sha256 2>/dev/null
 print_success "Quote 已生成！"
 
@@ -128,8 +130,8 @@ print_step "6" "验证方验证 Quote"
 print_info "验证方收到 Quote 后，使用 AK 公钥验证签名"
 print_info "同时检查 Nonce 是否匹配（防止重放攻击）"
 
-print_cmd "tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q 0x${NONCE}"
-VERIFY_OUTPUT=$(tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q "0x${NONCE}" 2>&1)
+print_cmd "tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q ${NONCE}"
+VERIFY_OUTPUT=$(tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q "${NONCE}" 2>&1)
 VERIFY_RESULT=$?
 
 echo ""
@@ -156,9 +158,9 @@ WRONG_NONCE=$(openssl rand -hex 16)
 print_compare "正确 Nonce" "0x${NONCE}"
 print_compare "错误 Nonce" "0x${WRONG_NONCE}"
 
-print_cmd "tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q 0x${WRONG_NONCE}"
+print_cmd "tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q ${WRONG_NONCE}"
 echo ""
-if tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q "0x${WRONG_NONCE}" 2>/dev/null; then
+if tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q "${WRONG_NONCE}" 2>/dev/null; then
     print_warning "验证竟然通过了？请检查 tpm2-tools 版本"
 else
     print_error "${ICON_SHIELD} 验证失败！Nonce 不匹配"
