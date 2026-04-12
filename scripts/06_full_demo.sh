@@ -33,7 +33,7 @@ print_info "保险箱系统启动时，首先度量自身环境的完整性"
 
 setup_work_dir "full_demo"
 cp "${PROJECT_ROOT}/test_files/config_baseline.txt" ./baseline.txt
-cp "${PROJECT_ROOT}/test_files/secret.txt" ./vault_secret.txt
+echo "MyVaultSecret-1234" > ./vault_secret.txt
 
 flush_all_contexts
 
@@ -72,6 +72,7 @@ print_substep "PCR 授权策略已创建 (绑定 PCR 0,16)"
 
 # 密封保险箱秘密
 tpm2_create -C primary.ctx -L pcr.policy -i vault_secret.txt -u seal.pub -r seal.priv 2>/dev/null
+tpm2_flushcontext -t 2>/dev/null || true
 tpm2_load -C primary.ctx -u seal.pub -r seal.priv -c seal.ctx 2>/dev/null
 print_success "${ICON_LOCK} 保险箱已锁定！秘密文件已密封到 TPM"
 
@@ -97,11 +98,12 @@ NONCE=$(openssl rand -hex 16)
 print_substep "管理员发送挑战 Nonce: 0x${NONCE}"
 
 # 生成 Quote
-tpm2_quote -c ak.ctx -l sha256:0,16 -q "0x${NONCE}" -m quote.msg -s quote.sig -o quote_pcr.bin -g sha256 2>/dev/null
+tpm2_flushcontext -t 2>/dev/null || true
+tpm2_quote -c ak.ctx -l sha256:0,16 -q "${NONCE}" -m quote.msg -s quote.sig -o quote_pcr.bin -g sha256 2>/dev/null
 print_substep "Quote 已生成"
 
 # 验证 Quote
-if tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q "0x${NONCE}" 2>/dev/null; then
+if tpm2_checkquote -u ak.pub -m quote.msg -s quote.sig -f quote_pcr.bin -q "${NONCE}" 2>/dev/null; then
     print_success "${ICON_SHIELD} 远程证明验证通过！管理员确认平台可信"
 else
     print_error "远程证明验证失败"
@@ -118,6 +120,7 @@ print_info "平台验证通过，现在可以安全地解封保险箱"
 # 重新创建主密钥和加载密封对象（因为 flush 过了）
 flush_all_contexts
 tpm2_createprimary -C o -g sha256 -G rsa -c primary.ctx 2>/dev/null
+tpm2_flushcontext -t 2>/dev/null || true
 tpm2_load -C primary.ctx -u seal.pub -r seal.priv -c seal.ctx 2>/dev/null
 
 tpm2_startauthsession -S session.ctx --policy-session 2>/dev/null
@@ -146,6 +149,7 @@ print_error "PCR 16 已被篡改！(恶意软件注入)"
 # 尝试解封
 flush_all_contexts
 tpm2_createprimary -C o -g sha256 -G rsa -c primary.ctx 2>/dev/null
+tpm2_flushcontext -t 2>/dev/null || true
 tpm2_load -C primary.ctx -u seal.pub -r seal.priv -c seal.ctx 2>/dev/null
 
 tpm2_startauthsession -S session.ctx --policy-session 2>/dev/null
