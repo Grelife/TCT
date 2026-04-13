@@ -22,7 +22,7 @@ setup_work_dir "pkcs11"
 # --- 检查 PKCS#11 工具 ---
 print_step "0" "检查 PKCS#11 工具和资源管理器"
 PKCS11_LIB=""
-for p in /usr/lib/x86_64-linux-gnu/libtpm2_pkcs11.so /usr/lib/libtpm2_pkcs11.so /usr/local/lib/libtpm2_pkcs11.so; do
+for p in /usr/lib/x86_64-linux-gnu/pkcs11/libtpm2_pkcs11.so /usr/lib/x86_64-linux-gnu/libtpm2_pkcs11.so /usr/lib/libtpm2_pkcs11.so /usr/local/lib/libtpm2_pkcs11.so; do
     [ -f "$p" ] && PKCS11_LIB="$p" && break
 done
 [ -z "$PKCS11_LIB" ] && { print_error "libtpm2_pkcs11.so 未找到"; exit 1; }

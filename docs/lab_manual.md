@@ -524,7 +524,7 @@ tpm2_ptool addkey --label=mytoken --userpin=userpin123 --algorithm=rsa2048
 find /usr/lib -name "libtpm2_pkcs11.so" 2>/dev/null
 
 # 列出 slots（用上面找到的路径替换）
-PKCS11_LIB="/usr/lib/x86_64-linux-gnu/libtpm2_pkcs11.so"
+PKCS11_LIB="/usr/lib/x86_64-linux-gnu/pkcs11/libtpm2_pkcs11.so"
 pkcs11-tool --module $PKCS11_LIB -L
 pkcs11-tool --module $PKCS11_LIB -O --login --pin userpin123
 ```
