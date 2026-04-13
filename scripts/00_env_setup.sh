@@ -48,6 +48,10 @@ PACKAGES=(
     # TPM 2.0 工具链
     "tpm2-tools"
     "libtss2-dev"
+    # TPM 2.0 资源管理器 (解决 PKCS#11 等高级工具的内存管理问题)
+    "tpm2-abrmd"
+    "libtss2-tcti-tabrmd0"
+    "libtss2-tcti-tabrmd-dev"
     # TPM 2.0 PKCS#11
     "libtpm2-pkcs11-1"
     "libtpm2-pkcs11-tools"
@@ -60,6 +64,8 @@ PACKAGES=(
     # 其他工具
     "xxd"
     "jq"
+    # D-Bus (资源管理器依赖)
+    "dbus"
 )
 
 for pkg in "${PACKAGES[@]}"; do

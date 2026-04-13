@@ -466,47 +466,74 @@ PKCS#11 是一个**标准化的密码令牌接口**。浏览器、OpenSSL、SSH 
 ### 4.1 安装额外依赖
 
 ```bash
-sudo apt install -y libtpm2-pkcs11-1 libtpm2-pkcs11-tools opensc
+sudo apt install -y libtpm2-pkcs11-1 libtpm2-pkcs11-tools opensc \
+    tpm2-abrmd libtss2-tcti-tabrmd0 libtss2-tcti-tabrmd-dev
 ```
 
-### 4.2 设置 PKCS#11 环境
+### 4.2 启动资源管理器 (tpm2-abrmd)
+
+> ⚠️ **为什么 PKCS#11 必须使用资源管理器？**
+> `tpm2_ptool` 底层会在**单条命令内部**连续发起多次 TPM 操作（创建主密钥 → 创建子密钥 → 签名验证），
+> 轻松占满仅有的 3 个瞬态内存插槽。手动 `tpm2_flushcontext` 无法解决这个问题，
+> 因为插槽是在工具自己的内部被撑爆的，外部根本来不及清理。
+> 资源管理器 `tpm2-abrmd` 就像操作系统的虚拟内存，能自动进行"换页"调度。
 
 ```bash
-export TPM2_PKCS11_TCTI="swtpm:host=localhost,port=2321"
+# 进入带有私有 D-Bus 总线的子终端
+dbus-run-session bash
+
+# 在子终端中启动资源管理器（后台挂起，对接 swtpm 模拟器）
+tpm2-abrmd --tcti="swtpm:host=localhost,port=2321" --session &
+sleep 1
+```
+
+### 4.3 设置 PKCS#11 环境
+
+现在所有工具都必须通过资源管理器来访问 TPM（不再直连 swtpm）：
+
+```bash
+export TPM2TOOLS_TCTI="tabrmd:bus_type=session"
+export TPM2_PKCS11_TCTI="tabrmd:bus_type=session"
 export TPM2_PKCS11_STORE="/tmp/tpm-pkcs11-store"
 mkdir -p $TPM2_PKCS11_STORE
 ```
 
-### 4.3 初始化并创建 Token
+验证资源管理器是否工作正常：
 
 ```bash
-# ⚠️ 高能预警：同样是因为没有资源管理器保护
-# tpm2_ptool 底层依然会调用 TPM 并在内存里塞满句柄，必须先大扫除！
-tpm2_flushcontext -t 2>/dev/null || true
-tpm2_flushcontext -l 2>/dev/null || true
-tpm2_flushcontext -s 2>/dev/null || true
+tpm2_pcrread sha256:0
+```
 
+如果正常输出 PCR 值，说明资源管理器已接管通信。
+
+### 4.4 初始化并创建 Token
+
+有了资源管理器，以下命令可以一气呵成，无需手动清理内存：
+
+```bash
+rm -rf /tmp/tpm-pkcs11-store/*
 tpm2_ptool init
 tpm2_ptool addtoken --pid=1 --label=mytoken --sopin=sopin123 --userpin=userpin123
 tpm2_ptool addkey --label=mytoken --userpin=userpin123 --algorithm=rsa2048
 ```
 
-### 4.4 用 pkcs11-tool 查看
+### 4.5 用 pkcs11-tool 查看
 
 ```bash
 # 找到 PKCS#11 模块的位置
 find /usr/lib -name "libtpm2_pkcs11.so" 2>/dev/null
 
 # 列出 slots（用上面找到的路径替换）
-PKC11_LIB="/usr/lib/x86_64-linux-gnu/libtpm2_pkcs11.so"
-pkcs11-tool --module $PKC11_LIB -L
-pkcs11-tool --module $PKC11_LIB -O --login --pin userpin123
+PKCS11_LIB="/usr/lib/x86_64-linux-gnu/libtpm2_pkcs11.so"
+pkcs11-tool --module $PKCS11_LIB -L
+pkcs11-tool --module $PKCS11_LIB -O --login --pin userpin123
 ```
 
-### 4.5 思考题
+### 4.6 思考题
 
 > ❓ 和直接用 tpm2-tools 相比，PKCS#11 的优势是什么？
 > ❓ 哪些日常应用可以使用 PKCS#11 接口?（提示：浏览器 TLS 客户端证书、SSH 认证）
+> ❓ 为什么实验 1-3 可以直连 swtpm，而实验 4 必须通过资源管理器？
 
 ---
 
