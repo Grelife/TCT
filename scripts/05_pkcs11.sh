@@ -28,6 +28,7 @@ print_success "PKCS#11 工具检查通过"
 # --- 步骤 1: 初始化 Token Store ---
 print_step "1" "初始化 PKCS#11 Token Store"
 mkdir -p "${TPM2_PKCS11_STORE}"
+flush_all_contexts
 print_cmd "tpm2_ptool init"
 tpm2_ptool init 2>/dev/null || print_warning "Store 可能已初始化"
 

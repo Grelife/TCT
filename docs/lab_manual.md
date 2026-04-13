@@ -480,6 +480,12 @@ mkdir -p $TPM2_PKCS11_STORE
 ### 4.3 初始化并创建 Token
 
 ```bash
+# ⚠️ 高能预警：同样是因为没有资源管理器保护
+# tpm2_ptool 底层依然会调用 TPM 并在内存里塞满句柄，必须先大扫除！
+tpm2_flushcontext -t 2>/dev/null || true
+tpm2_flushcontext -l 2>/dev/null || true
+tpm2_flushcontext -s 2>/dev/null || true
+
 tpm2_ptool init
 tpm2_ptool addtoken --pid=1 --label=mytoken --sopin=sopin123 --userpin=userpin123
 tpm2_ptool addkey --label=mytoken --userpin=userpin123 --algorithm=rsa2048
