@@ -1,0 +1,21 @@
+{
+  "name": "presentation_30min",
+  "version": "1.0.0",
+  "description": "30-minute TPM course design presentation deck and speech notes",
+  "main": "build_deck.js",
+  "scripts": {
+    "build": "node build_deck.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "fontkit": "^2.0.4",
+    "linebreak": "^1.1.0",
+    "mathjax-full": "^3.2.1",
+    "pptxgenjs": "^4.0.1",
+    "prismjs": "^1.30.0",
+    "skia-canvas": "^3.0.8"
+  }
+}
