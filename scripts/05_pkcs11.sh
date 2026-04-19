@@ -13,6 +13,18 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/utils/tpm_helpers.sh"
 
+# 为 PKCS#11 演示创建独立的 D-Bus 会话，确保 abrmd 和客户端在同一条总线上。
+if [ -z "${TPM_PKCS11_DBUS_BOOTSTRAPPED:-}" ]; then
+    if ! command -v dbus-run-session &>/dev/null; then
+        print_error "dbus-run-session 未安装，无法启动 PKCS#11 演示"
+        print_info "请先运行: sudo bash scripts/00_env_setup.sh"
+        exit 1
+    fi
+
+    export TPM_PKCS11_DBUS_BOOTSTRAPPED=1
+    exec dbus-run-session -- bash "$0" "$@"
+fi
+
 print_banner "${ICON_KEY} 演示 4: PKCS#11 接口"
 
 # --- 前置检查 ---
@@ -32,36 +44,46 @@ command -v tpm2_ptool &>/dev/null || { print_error "tpm2_ptool 未安装"; exit 
 # 检查资源管理器
 command -v tpm2-abrmd &>/dev/null || { print_error "tpm2-abrmd 未安装，请运行: sudo apt install -y tpm2-abrmd libtss2-tcti-tabrmd0"; exit 1; }
 
-# 检查是否在 dbus-run-session 中运行
-if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
-    print_error "请在 dbus-run-session 子终端中运行此脚本！"
-    print_info "用法: dbus-run-session bash"
-    print_info "然后: tpm2-abrmd --tcti=\"swtpm:host=localhost,port=2321\" --session &"
-    print_info "然后: export TPM2TOOLS_TCTI=\"tabrmd:bus_type=session\""
-    print_info "最后: bash scripts/05_pkcs11.sh"
+# 启动资源管理器
+print_info "正在启动资源管理器 tpm2-abrmd..."
+tpm2-abrmd --tcti="swtpm:host=localhost,port=${TPM_SERVER_PORT}" --session &
+ABRMD_PID=$!
+sleep 2
+
+cleanup_abrmd() {
+    if [ -n "${ABRMD_PID:-}" ] && kill -0 "${ABRMD_PID}" 2>/dev/null; then
+        kill "${ABRMD_PID}" 2>/dev/null || true
+        wait "${ABRMD_PID}" 2>/dev/null || true
+    fi
+}
+trap cleanup_abrmd EXIT
+
+# 验证资源管理器是否运行
+if ! kill -0 "${ABRMD_PID}" 2>/dev/null; then
+    print_error "资源管理器启动失败"
     exit 1
 fi
-
-# 检查 tpm2-abrmd 是否在运行
-if ! pgrep -x "tpm2-abrmd" > /dev/null 2>&1; then
-    print_info "正在启动资源管理器 tpm2-abrmd..."
-    tpm2-abrmd --tcti="swtpm:host=localhost,port=${TPM_SERVER_PORT}" --session &
-    sleep 2
-    if pgrep -x "tpm2-abrmd" > /dev/null 2>&1; then
-        print_success "资源管理器已启动"
-    else
-        print_error "资源管理器启动失败"
-        exit 1
-    fi
-else
-    print_substep "资源管理器 tpm2-abrmd 已在运行"
-fi
+print_success "资源管理器已启动"
 
 # 切换 TCTI 到资源管理器
 export TPM2TOOLS_TCTI="tabrmd:bus_type=session"
 export TPM2_PKCS11_TCTI="tabrmd:bus_type=session"
 print_substep "TCTI 已切换到: tabrmd:bus_type=session"
 
+# 验证 TCTI 注册
+ABRMD_READY=false
+for _ in $(seq 1 10); do
+    if tpm2_getcap properties-fixed >/dev/null 2>&1; then
+        ABRMD_READY=true
+        break
+    fi
+    sleep 1
+done
+
+if [ "${ABRMD_READY}" != "true" ]; then
+    print_error "无法通过 TCTI 连接到 TPM，请检查环境"
+    exit 1
+fi
 print_success "PKCS#11 工具和资源管理器检查通过"
 
 # --- 步骤 1: 初始化 Token Store ---
@@ -69,7 +91,14 @@ print_step "1" "初始化 PKCS#11 Token Store"
 mkdir -p "${TPM2_PKCS11_STORE}"
 rm -rf "${TPM2_PKCS11_STORE}"/*
 print_cmd "tpm2_ptool init"
-tpm2_ptool init 2>/dev/null || print_warning "Store 可能已初始化"
+if INIT_OUTPUT=$(tpm2_ptool init 2>&1); then
+    [ -n "${INIT_OUTPUT}" ] && print_output "${INIT_OUTPUT}"
+    print_success "Token Store 已初始化"
+else
+    print_error "Token Store 初始化失败"
+    [ -n "${INIT_OUTPUT}" ] && print_output "${INIT_OUTPUT}"
+    exit 1
+fi
 
 # --- 步骤 2: 创建 Token ---
 print_step "2" "创建 PKCS#11 Token"
