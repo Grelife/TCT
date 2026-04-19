@@ -20,7 +20,7 @@
 
 ```bash
 # 1. 克隆项目
-git clone <your-repo-url>
+git clone https://github.com/Grelife/TCT.git
 cd TCT
 
 # 2. 安装依赖（只需运行一次）
@@ -42,6 +42,35 @@ bash scripts/06_full_demo.sh
 # 6. 清理环境
 bash scripts/99_cleanup.sh
 ```
+
+## 代码安装与使用步骤
+
+下面是一套完整的安装、运行与清理命令，可直接按顺序执行：
+
+```bash
+git clone https://github.com/Grelife/TCT.git
+cd TCT
+chmod +x scripts/*.sh scripts/utils/*.sh
+sudo bash scripts/00_env_setup.sh
+bash scripts/01_start_tpm.sh
+bash scripts/02_measurement.sh
+bash scripts/03_seal_unseal.sh
+bash scripts/04_attestation.sh
+bash scripts/05_pkcs11.sh
+bash scripts/06_full_demo.sh
+bash scripts/99_cleanup.sh
+```
+
+说明：
+
+- `00_env_setup.sh`：安装 TPM 2.0 模拟器、工具链、PKCS#11 相关依赖。
+- `01_start_tpm.sh`：启动 `swtpm` 模拟器并验证 TPM 连接。
+- `02_measurement.sh`：演示 PCR 度量与篡改检测。
+- `03_seal_unseal.sh`：演示基于 PCR 状态的密封与解封。
+- `04_attestation.sh`：演示基于 EK/AK 的远程证明。
+- `05_pkcs11.sh`：演示 TPM 作为 PKCS#11 密码令牌的签名与验签。
+- `06_full_demo.sh`：串联完整“TPM 安全文件保险箱”业务流程。
+- `99_cleanup.sh`：停止模拟器并删除临时状态文件。
 
 ## 项目结构
 
