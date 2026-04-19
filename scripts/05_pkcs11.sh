@@ -111,7 +111,14 @@ print_success "Token '${PKCS11_TOKEN_LABEL}' 已创建"
 print_step "3" "在 TPM Token 中生成 RSA-2048 密钥对"
 print_info "私钥在 TPM 内部生成，永远不会离开 TPM"
 print_cmd "tpm2_ptool addkey --label=${PKCS11_TOKEN_LABEL} --userpin=${PKCS11_USER_PIN} --algorithm=rsa2048"
-tpm2_ptool addkey --label="${PKCS11_TOKEN_LABEL}" --userpin="${PKCS11_USER_PIN}" --algorithm=rsa2048 2>/dev/null
+ADDKEY_OUTPUT=$(tpm2_ptool addkey --label="${PKCS11_TOKEN_LABEL}" --userpin="${PKCS11_USER_PIN}" --algorithm=rsa2048 2>&1)
+[ -n "${ADDKEY_OUTPUT}" ] && print_output "${ADDKEY_OUTPUT}"
+KEY_ID=$(echo "${ADDKEY_OUTPUT}" | awk -F"'" '/CKA_ID:/ {print $2; exit}')
+if [ -n "${KEY_ID}" ]; then
+    print_substep "密钥 ID: ${KEY_ID}"
+else
+    print_warning "未能从 addkey 输出中解析 CKA_ID，后续公钥导出将尝试自动匹配"
+fi
 print_success "RSA-2048 密钥对已生成"
 
 # --- 步骤 4: 列出 Token 信息 ---
@@ -140,17 +147,29 @@ if command -v pkcs11-tool &>/dev/null; then
 
         # 步骤 6: 验证签名
         print_step "6" "导出公钥并验证签名"
-        if pkcs11-tool --module "${PKCS11_LIB}" --read-object --type pubkey --login --pin "${PKCS11_USER_PIN}" -o pubkey.der 2>/dev/null; then
-            openssl rsa -pubin -inform DER -in pubkey.der -outform PEM -out pubkey.pem 2>/dev/null
-            print_substep "公钥已导出"
-            VERIFY=$(openssl dgst -sha256 -verify pubkey.pem -signature signature.bin data_to_sign.txt 2>&1)
-            if echo "$VERIFY" | grep -q "Verified OK"; then
-                print_success "${ICON_SHIELD} 签名验证成功！(Verified OK)"
+        READ_PUB_CMD=(pkcs11-tool --module "${PKCS11_LIB}" --read-object --type pubkey --login --pin "${PKCS11_USER_PIN}")
+        if [ -n "${KEY_ID:-}" ]; then
+            READ_PUB_CMD+=(--id "${KEY_ID}")
+        fi
+        READ_PUB_CMD+=(-o pubkey.der)
+
+        print_cmd "${READ_PUB_CMD[*]}"
+        if PUBKEY_OUTPUT=$("${READ_PUB_CMD[@]}" 2>&1); then
+            [ -n "${PUBKEY_OUTPUT}" ] && print_output "${PUBKEY_OUTPUT}"
+            if openssl pkey -pubin -inform DER -in pubkey.der -out pubkey.pem 2>/dev/null; then
+                print_substep "公钥已导出"
+                VERIFY=$(openssl dgst -sha256 -verify pubkey.pem -signature signature.bin data_to_sign.txt 2>&1)
+                if echo "$VERIFY" | grep -q "Verified OK"; then
+                    print_success "${ICON_SHIELD} 签名验证成功！(Verified OK)"
+                else
+                    print_warning "验证结果: ${VERIFY}"
+                fi
             else
-                print_warning "验证结果: ${VERIFY}"
+                print_warning "已导出公钥对象，但 DER 转 PEM 失败"
             fi
         else
             print_warning "无法导出公钥，跳过验证"
+            [ -n "${PUBKEY_OUTPUT}" ] && print_output "${PUBKEY_OUTPUT}"
         fi
     else
         print_warning "签名失败，可能需要调整 PKCS#11 配置"
