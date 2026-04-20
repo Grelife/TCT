@@ -13,8 +13,8 @@ const pptx = new pptxgen();
 pptx.layout = "LAYOUT_WIDE";
 pptx.author = "OpenAI Codex";
 pptx.company = "OpenAI";
-pptx.subject = "TPM 安全文件保险箱课程设计答辩";
-pptx.title = "TPM 安全文件保险箱课程设计答辩";
+pptx.subject = "TPM 安全文件保险箱";
+pptx.title = "TPM 安全文件保险箱";
 pptx.lang = "zh-CN";
 pptx.theme = {
   headFontFace: "Microsoft YaHei",
@@ -144,7 +144,7 @@ function addShell(slide, title, section, page, lead) {
     align: "right",
     margin: 0,
   });
-  slide.addText("TPM 安全文件保险箱课程设计答辩", {
+  slide.addText("TPM 安全文件保险箱", {
     x: 0.65,
     y: 7.26,
     w: 3.6,
@@ -245,7 +245,7 @@ function addCodePanel(slide, title, code, language, x, y, w, h) {
     w: w - 0.28,
     h: h - 0.36,
     fontFace: FONT.mono,
-    fontSize: 10.5,
+    fontSize: 10.0,
     color: "EAF2FF",
     margin: 0,
     valign: "top",
@@ -286,7 +286,7 @@ function addStatCard(slide, x, y, w, h, title, body, accent, lightFill) {
   });
 }
 
-function addOutputBox(slide, title, body, x, y, w, h) {
+function addOutputBox(slide, title, body, x, y, w, h, fontSize = 10.5) {
   addPanel(slide, x, y, w, h, C.panel, title);
   slide.addText(body, {
     x: x + 0.16,
@@ -294,7 +294,7 @@ function addOutputBox(slide, title, body, x, y, w, h) {
     w: w - 0.32,
     h: h - 0.5,
     fontFace: FONT.mono,
-    fontSize: 10.5,
+    fontSize,
     color: C.text,
     margin: 0,
     valign: "top",
@@ -355,13 +355,13 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
     color: "FFFFFF",
     margin: 0,
   });
-  slide.addText("30 分钟课程设计答辩 PPT", {
+  slide.addText("基于 TPM 2.0 的可信度量、密封、远程证明与 PKCS#11 实现", {
     x: 0.98,
     y: 1.62,
-    w: 4.8,
-    h: 0.2,
+    w: 5.8,
+    h: 0.24,
     fontFace: FONT.body,
-    fontSize: 16,
+    fontSize: 13.5,
     color: "C8D7EC",
     margin: 0,
   });
@@ -425,13 +425,13 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
       margin: 0,
     });
   });
-  addPanel(slide, 7.55, 3.95, 5.1, 2.0, C.panel, "本次交付物");
+  addPanel(slide, 7.55, 3.95, 5.1, 2.0, C.panel, "报告重点");
   addBulletList(
     slide,
     [
-      "一份 20 页左右、面向 30 分钟答辩节奏的 PowerPoint。",
-      "一篇逐页对应的演讲稿，保证讲解顺序和 slide 一致。",
-      "保留可编辑的 JS 源文件，后续可以继续改版。",
+      "按脚本顺序讲清系统如何从环境搭建走到完整可信链路。",
+      "把 PCR、Policy、Quote 与 Token 这些理论名词落到具体代码和命令。",
+      "结合真实实验输出，说明可信状态与篡改状态的结果差异。",
     ],
     7.76,
     4.3,
@@ -465,13 +465,13 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
 // Slide 2
 {
   const slide = pptx.addSlide();
-  addShell(slide, "汇报路线与时间分配", "导览", 2, "先给出 30 分钟节奏，再按这个顺序展开。");
+  addShell(slide, "汇报路线", "导览", 2, "按照系统目标、脚本实现、理论落地、实验结果四条线展开。");
   const agenda = [
-    ["01", "系统目标与实验拓扑", "为什么做这个系统、拓扑怎么搭起来。", "约 4 分钟", C.cyan],
-    ["02", "脚本顺序与职责划分", "00 到 99 各脚本在总目标里负责哪一块。", "约 8 分钟", C.blue],
-    ["03", "理论与代码对应讲解", "PCR、Policy、Quote、PKCS#11 对应到具体代码。", "约 10 分钟", C.orange],
-    ["04", "实验效果与现象解读", "展示真实输出，说明系统确实成功。", "约 5 分钟", C.green],
-    ["05", "安全分析、局限与总结", "说明收益、风险边界和可以继续改进的地方。", "约 3 分钟", C.red],
+    ["01", "系统目标与实验拓扑", "为什么做这个系统、拓扑怎么搭起来。", "目标", C.cyan],
+    ["02", "脚本顺序与职责划分", "00 到 99 各脚本在总目标里负责哪一块。", "脚本", C.blue],
+    ["03", "理论与代码对应讲解", "PCR、Policy、Quote、PKCS#11 对应到具体代码。", "理论", C.orange],
+    ["04", "实验效果与现象解读", "展示真实输出，说明系统确实成功。", "结果", C.green],
+    ["05", "安全分析、局限与总结", "说明收益、风险边界和可以继续改进的地方。", "总结", C.red],
   ];
   agenda.forEach((item, idx) => {
     const y = 1.35 + idx * 1.07;
@@ -531,19 +531,20 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
       margin: 0,
     });
   });
-  addPanel(slide, 11.55, 1.34, 1.1, 5.25, C.lightBlue, "节奏提醒");
+  addPanel(slide, 11.55, 1.34, 1.1, 5.25, C.lightBlue, "阅读提示");
   slide.addText(
-    "前半段讲“系统是怎么搭起来并跑起来的”，后半段讲“理论怎么落到代码上，以及实验结果说明了什么”。",
+    "先看目标\n再看脚本\n再看理论\n最后看结果",
     {
       x: 11.7,
-      y: 1.82,
+      y: 2.35,
       w: 0.8,
-      h: 4.4,
+      h: 3.1,
       fontFace: FONT.body,
-      fontSize: 11,
+      fontSize: 13.5,
       color: C.text,
       valign: "mid",
-      margin: 0.03,
+      margin: 0.02,
+      align: "center",
     }
   );
   finalizeSlide(slide);
@@ -1046,11 +1047,12 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
   addOutputBox(
     slide,
     "实验输出：PCR 10 的变化",
-    `初始: 10:0x0000000000000000000000000000000000000000000000000000000000000000\n第一次扩展后: 10:0x85CCFB9AE4A72E3CB0A96067E37A262D3DFACEA94F1595F18B46F06F1471E0A0\n篡改后文件哈希: 9ed9ed5f34fbd3ad1410370f771b26027505dfcc098eb0ef00df4f9d5c97b9f1\n第二次扩展后: 10:0x2CD101015684E104C032ED6FE458CA4A6EA55686AF7CC0B7367A7D8C6D895E62`,
+    `初始 PCR10:\n10:0x0000000000000000000000000000000000000000000000000000000000000000\n\n第一次扩展后:\n10:0x85CCFB9AE4A72E3CB0A96067E37A262D\n   3DFACEA94F1595F18B46F06F1471E0A0\n\n篡改后文件哈希:\n9ed9ed5f34fbd3ad1410370f771b2602\n7505dfcc098eb0ef00df4f9d5c97b9f1\n\n第二次扩展后:\n10:0x2CD101015684E104C032ED6FE458CA4A\n   6EA55686AF7CC0B7367A7D8C6D895E62`,
     6.12,
     1.42,
     6.45,
-    3.0
+    3.0,
+    8.8
   );
   addPanel(slide, 6.12, 4.7, 6.45, 2.25, C.lightBlue, "它负责总目标中的哪一块");
   slide.addText(
@@ -1447,9 +1449,9 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
     0.82,
     3.35,
     7.15,
-    3.2
+    3.45
   );
-  addPanel(slide, 8.2, 3.35, 4.35, 3.2, C.panel, "为什么这段代码重要");
+  addPanel(slide, 8.2, 3.35, 4.35, 3.45, C.panel, "为什么这段代码重要");
   addBulletList(
     slide,
     [
@@ -1499,7 +1501,7 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
   addBulletList(
     slide,
     [
-      "把“脚本功能”升级成“系统流程”，更适合答辩展示。",
+      "把“脚本功能”升级成“系统流程”，更适合完整展示。",
       "证明四项能力不是孤立存在，而是能组合成一条可信链。",
       "输出中既有正常解封，也有攻击失败，实验对比非常清楚。",
     ],
@@ -1527,7 +1529,7 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
 // Slide 17
 {
   const slide = pptx.addSlide();
-  addShell(slide, "公共关键代码：统一配置、环境检查与上下文清理", "代码", 17, "答辩里不能只讲业务脚本，还要讲这些让系统稳定运行的基础层。");
+  addShell(slide, "公共关键代码：统一配置、环境检查与上下文清理", "代码", 17, "除了业务脚本，还要讲这些让系统稳定运行的基础层。");
   addCodePanel(
     slide,
     "config/tpm_env.conf：统一配置",
@@ -1536,7 +1538,7 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
     0.78,
     1.4,
     6.0,
-    2.3
+    2.55
   );
   addCodePanel(
     slide,
@@ -1546,7 +1548,7 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
     0.78,
     4.02,
     6.0,
-    2.55
+    2.75
   );
   addPanel(slide, 7.02, 1.4, 5.55, 5.15, C.panel, "为什么这部分非常关键");
   addBulletList(
@@ -1621,13 +1623,13 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
   const slide = pptx.addSlide();
   addShell(slide, "实验效果演示二：完整业务流程与攻击阻止", "效果", 19, "这页展示最终系统级效果：可信时能开箱，不可信时打不开。");
   addPanel(slide, 0.82, 1.42, 5.9, 5.3, C.lightGreen, "可信状态：系统允许解封");
-  slide.addText("06_full_demo 的关键输出", {
+  slide.addText("关键输出摘录", {
     x: 1.02,
-    y: 1.7,
+    y: 1.92,
     w: 5.45,
     h: 0.14,
     fontFace: FONT.head,
-    fontSize: 15,
+    fontSize: 12.5,
     bold: true,
     color: C.green,
     margin: 0,
@@ -1636,9 +1638,9 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
     `PCR 0/16 已建立可信基线\n远程证明验证通过\n解封结果：MyVaultSecret-1234\n\n这说明系统在“可信平台 + 证明通过”的前提下，能够顺利释放业务秘密。`,
     {
       x: 1.02,
-      y: 2.05,
+      y: 2.22,
       w: 5.3,
-      h: 3.8,
+      h: 3.55,
       fontFace: FONT.body,
       fontSize: 13,
       color: C.text,
@@ -1647,13 +1649,13 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
     }
   );
   addPanel(slide, 6.95, 1.42, 5.55, 5.3, C.lightRed, "篡改状态：系统拒绝解封");
-  slide.addText("攻击模拟的关键输出", {
+  slide.addText("关键输出摘录", {
     x: 7.15,
-    y: 1.7,
+    y: 1.92,
     w: 5.1,
     h: 0.14,
     fontFace: FONT.head,
-    fontSize: 15,
+    fontSize: 12.5,
     bold: true,
     color: C.red,
     margin: 0,
@@ -1662,9 +1664,9 @@ function addFlowArrow(slide, x, y, w, h, text, fill) {
     `攻击者向 PCR 16 扩展 MALWARE_INJECTED 摘要\n重新创建主密钥并尝试解封\nTPM 返回：解封被拒绝，攻击被阻止\n\n这说明攻击者即使获得系统访问权，也无法在错误平台状态下取出秘密。`,
     {
       x: 7.15,
-      y: 2.05,
+      y: 2.22,
       w: 4.95,
-      h: 3.8,
+      h: 3.55,
       fontFace: FONT.body,
       fontSize: 13,
       color: C.text,
