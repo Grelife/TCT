@@ -19,8 +19,17 @@ print_banner "${ICON_MEASURE} 演示 1: PCR 度量 (Measurement)"
 check_environment
 setup_work_dir "measurement"
 
-# 复制测试文件到工作目录
-cp "${PROJECT_ROOT}/test_files/config_baseline.txt" ./config.txt
+# 复制关键系统组件到工作目录，避免修改真实系统文件
+COMPONENT_SOURCE="/bin/bash"
+COMPONENT_COPY="./measured_component.bin"
+COMPONENT_LABEL="/bin/bash (Shell 解释器)"
+
+if [ ! -r "$COMPONENT_SOURCE" ]; then
+    COMPONENT_SOURCE="${PROJECT_ROOT}/test_files/config_baseline.txt"
+    COMPONENT_LABEL="config_baseline.txt (备用配置基线)"
+fi
+
+cp "$COMPONENT_SOURCE" "$COMPONENT_COPY"
 
 # ============================================================
 # 步骤 1: 读取初始 PCR 值
@@ -37,13 +46,14 @@ PCR_VALUE_INITIAL=$(read_pcr_value 10)
 print_compare "PCR[10] 初始值" "$PCR_VALUE_INITIAL"
 
 # ============================================================
-# 步骤 2: 对配置文件进行度量
+# 步骤 2: 对关键组件进行度量
 # ============================================================
-print_step "2" "计算配置文件的 SHA-256 哈希值"
-print_info "目标文件: config.txt (系统配置基线)"
+print_step "2" "计算关键组件的 SHA-256 哈希值"
+print_info "目标组件: ${COMPONENT_LABEL}"
+print_info "实验文件: measured_component.bin (真实组件的安全副本)"
 
-print_cmd "sha256sum config.txt"
-FILE_HASH=$(compute_sha256 config.txt)
+print_cmd "sha256sum measured_component.bin"
+FILE_HASH=$(compute_sha256 "$COMPONENT_COPY")
 print_compare "文件哈希" "$FILE_HASH"
 
 print_separator
@@ -53,7 +63,7 @@ print_separator
 # ============================================================
 print_step "3" "将文件哈希扩展到 PCR 10"
 print_info "执行: PCR_new = SHA256(PCR_old || file_hash)"
-print_info "这模拟了系统在启动时对配置文件的完整性度量"
+print_info "这模拟了 IMA 对关键用户态组件的完整性度量"
 
 print_cmd "tpm2_pcrextend 10:sha256=${FILE_HASH}"
 tpm2_pcrextend "10:sha256=${FILE_HASH}" 2>/dev/null
@@ -72,25 +82,25 @@ print_compare "扩展后" "$PCR_VALUE_FIRST"
 print_success "PCR 值已改变！说明度量数据已被记录"
 
 # ============================================================
-# 步骤 4: 模拟文件被篡改
+# 步骤 4: 模拟关键组件被篡改
 # ============================================================
-print_step "4" "模拟配置文件被攻击者篡改"
-print_info "攻击者将 SSH 端口从 22 改为 2222（开后门）"
+print_step "4" "模拟关键组件被攻击者替换或篡改"
+print_info "这里只修改工作目录中的副本，不会修改真实的 ${COMPONENT_SOURCE}"
 
-# 修改文件
-sed -i 's/ssh_port=22/ssh_port=2222/' config.txt
-print_substep "文件已被修改"
+# 修改副本，让文件哈希发生变化
+printf '\nTAMPERED-BY-PCR-MEASUREMENT-DEMO\n' >> "$COMPONENT_COPY"
+print_substep "组件副本已被修改"
 
 # 计算篡改后的哈希
-TAMPERED_HASH=$(compute_sha256 config.txt)
+TAMPERED_HASH=$(compute_sha256 "$COMPONENT_COPY")
 print_compare "正常哈希" "$FILE_HASH"
 print_compare "篡改哈希" "$TAMPERED_HASH"
-print_warning "哈希值不同！文件已被篡改"
+print_warning "哈希值不同！关键组件副本已被篡改"
 
 # ============================================================
-# 步骤 5: 再次度量篡改后的文件
+# 步骤 5: 再次度量篡改后的关键组件
 # ============================================================
-print_step "5" "对篡改后的文件重新度量"
+print_step "5" "对篡改后的关键组件重新度量"
 print_info "将篡改后的哈希扩展到同一个 PCR"
 
 print_cmd "tpm2_pcrextend 10:sha256=${TAMPERED_HASH}"
